@@ -4,113 +4,146 @@ import type React from "react"
 
 import { useState } from "react"
 import Link from "next/link"
+import { useRouter } from "next/navigation"
 import { Button } from "@/components/ui/button"
-import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from "@/components/ui/card"
+import { Card } from "@/components/ui/card"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { useAuth } from "@/hooks/useAuth"
 
 export default function LoginPage() {
-  const [isLoading, setIsLoading] = useState(false)
+  const [userType, setUserType] = useState<"student" | "teacher">("student")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const { login, loading, error } = useAuth()
+  const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    setIsLoading(true)
-    // Simulação de login
-    setTimeout(() => setIsLoading(false), 1000)
+    const success = await login(email, password, userType)
+    if (success) {
+      router.push("/dashboard")
+    }
   }
 
   return (
-    <div className="container flex h-screen w-screen flex-col items-center justify-center">
-      <Link href="/" className="absolute left-4 top-4 md:left-8 md:top-8">
-        <Button variant="ghost">Voltar</Button>
-      </Link>
-      <div className="mx-auto flex w-full flex-col justify-center space-y-6 sm:w-[350px]">
-        <div className="flex flex-col space-y-2 text-center">
-          <h1 className="text-2xl font-semibold tracking-tight">Bem-vindo de volta</h1>
-          <p className="text-sm text-muted-foreground">Entre com seu email e senha para acessar</p>
+    <div className="min-h-screen flex flex-col">
+      <header className="border-b">
+        <div className="container mx-auto px-4">
+          <div className="flex justify-between items-center h-16">
+            <Link href="/" className="flex items-center space-x-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-md bg-primary">
+                <span className="text-lg font-bold text-primary-foreground">DP</span>
+              </div>
+              <span className="text-2xl font-bold">Dynamic Pro</span>
+            </Link>
+          </div>
         </div>
+      </header>
 
-        <Tabs defaultValue="student" className="w-full">
-          <TabsList className="grid w-full grid-cols-2">
-            <TabsTrigger value="student">Aluno</TabsTrigger>
-            <TabsTrigger value="teacher">Professor</TabsTrigger>
-          </TabsList>
-          <TabsContent value="student">
-            <Card>
-              <form onSubmit={handleSubmit}>
-                <CardHeader>
-                  <CardTitle>Aluno</CardTitle>
-                  <CardDescription>Acesse sua conta de aluno no Dynamic Pro.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email">Email</Label>
-                    <Input id="email" type="email" placeholder="seu@email.com" required />
-                  </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+      <main className="flex-1 flex items-center justify-center p-4">
+        <div className="w-full max-w-md space-y-8">
+          <div className="text-center">
+            <h1 className="text-3xl font-bold">Login</h1>
+            <p className="mt-2 text-muted-foreground">Entre com suas credenciais para acessar</p>
+          </div>
+
+          <Card>
+            <Tabs value={userType} onValueChange={(value) => setUserType(value as "student" | "teacher")}>
+              <TabsList className="grid w-full grid-cols-2">
+                <TabsTrigger value="student">Aluno</TabsTrigger>
+                <TabsTrigger value="teacher">Professor</TabsTrigger>
+              </TabsList>
+
+              <TabsContent value="student">
+                <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="email">Email</Label>
+                      <Input
+                        id="email"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="password">Senha</Label>
-                      <Link href="/recuperar-senha" className="text-sm text-primary underline-offset-4 hover:underline">
-                        Esqueceu a senha?
-                      </Link>
+                      <Input
+                        id="password"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
                     </div>
-                    <Input id="password" type="password" required />
                   </div>
-                </CardContent>
-                <CardFooter className="flex flex-col space-y-4">
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? "Entrando..." : "Entrar"}
+
+                  {error && <div className="text-sm text-destructive">{error}</div>}
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Entrando..." : "Entrar"}
                   </Button>
-                  <p className="text-center text-sm text-muted-foreground">
-                    Não tem uma conta?{" "}
-                    <Link href="/registro" className="text-primary underline-offset-4 hover:underline">
-                      Registre-se
+
+                  <div className="text-center text-sm">
+                    <Link href="/registro" className="text-primary hover:underline">
+                      Não tem uma conta? Registre-se
                     </Link>
-                  </p>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
-          <TabsContent value="teacher">
-            <Card>
-              <form onSubmit={handleSubmit}>
-                <CardHeader>
-                  <CardTitle>Professor</CardTitle>
-                  <CardDescription>Acesse sua conta de professor no Dynamic Pro.</CardDescription>
-                </CardHeader>
-                <CardContent className="space-y-4">
-                  <div className="space-y-2">
-                    <Label htmlFor="email-teacher">Email</Label>
-                    <Input id="email-teacher" type="email" placeholder="seu@email.com" required />
                   </div>
-                  <div className="space-y-2">
-                    <div className="flex items-center justify-between">
+                </form>
+              </TabsContent>
+
+              <TabsContent value="teacher">
+                <form onSubmit={handleSubmit} className="space-y-6 p-6">
+                  <div className="space-y-4">
+                    <div>
+                      <Label htmlFor="email-teacher">Email</Label>
+                      <Input
+                        id="email-teacher"
+                        type="email"
+                        placeholder="seu@email.com"
+                        value={email}
+                        onChange={(e) => setEmail(e.target.value)}
+                        required
+                      />
+                    </div>
+                    <div>
                       <Label htmlFor="password-teacher">Senha</Label>
-                      <Link href="/recuperar-senha" className="text-sm text-primary underline-offset-4 hover:underline">
-                        Esqueceu a senha?
-                      </Link>
+                      <Input
+                        id="password-teacher"
+                        type="password"
+                        value={password}
+                        onChange={(e) => setPassword(e.target.value)}
+                        required
+                      />
                     </div>
-                    <Input id="password-teacher" type="password" required />
                   </div>
-                </CardContent>
-                <CardFooter className="flex flex-col space-y-4">
-                  <Button className="w-full" type="submit" disabled={isLoading}>
-                    {isLoading ? "Entrando..." : "Entrar"}
+
+                  {error && <div className="text-sm text-destructive">{error}</div>}
+
+                  <Button type="submit" className="w-full" disabled={loading}>
+                    {loading ? "Entrando..." : "Entrar"}
                   </Button>
-                  <p className="text-center text-sm text-muted-foreground">
-                    Não tem uma conta?{" "}
-                    <Link href="/registro" className="text-primary underline-offset-4 hover:underline">
-                      Registre-se
+
+                  <div className="text-center text-sm">
+                    <Link href="/registro" className="text-primary hover:underline">
+                      Não tem uma conta? Registre-se
                     </Link>
-                  </p>
-                </CardFooter>
-              </form>
-            </Card>
-          </TabsContent>
-        </Tabs>
-      </div>
+                  </div>
+                </form>
+              </TabsContent>
+            </Tabs>
+          </Card>
+        </div>
+      </main>
     </div>
   )
 }
+
+
+
+
 
