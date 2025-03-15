@@ -6,8 +6,15 @@ import { headers } from "next/headers"
 // Conexão com MongoDB
 const uri = process.env.MONGO_URI || ""
 
+// Verificar formato da URI
+if (!uri || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
+  console.error("ERRO DE CONFIGURAÇÃO: MongoDB URI inválida ou não definida", {
+    uri: uri ? uri.substring(0, 10) + "..." : "undefined",
+  })
+}
+
 export async function GET(request: Request) {
-  const client = new MongoClient(uri)
+  let client: MongoClient | null = null
 
   try {
     const headersList = headers()
@@ -26,7 +33,15 @@ export async function GET(request: Request) {
       role: string
     }
 
-    await client.connect()
+    // Inicializar cliente MongoDB com tratamento de erro
+    try {
+      client = new MongoClient(uri)
+      await client.connect()
+    } catch (dbError) {
+      console.error("Erro ao conectar ao MongoDB:", dbError)
+      return NextResponse.json({ message: "Erro de conexão com o banco de dados" }, { status: 500 })
+    }
+
     const db = client.db("dynamicpro")
     const usersCollection = db.collection("users")
 
@@ -52,7 +67,13 @@ export async function GET(request: Request) {
     console.error("Erro ao verificar token:", error)
     return NextResponse.json({ message: "Token inválido" }, { status: 401 })
   } finally {
-    await client.close()
+    if (client) {
+      try {
+        await client.close()
+      } catch (closeError) {
+        console.error("Erro ao fechar conexão MongoDB:", closeError)
+      }
+    }
   }
 }
 
