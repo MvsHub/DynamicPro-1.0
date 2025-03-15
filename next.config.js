@@ -11,7 +11,10 @@ const nextConfig = {
     MONGO_URI: process.env.MONGO_URI,
     JWT_SECRET: process.env.JWT_SECRET,
   },
+  // Configuração de output para o Vercel
+  output: "standalone",
 }
 
 module.exports = nextConfig
+
 
