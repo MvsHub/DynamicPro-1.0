@@ -3,6 +3,9 @@ import { MongoClient, ObjectId } from "mongodb"
 import { verify } from "jsonwebtoken"
 import { headers } from "next/headers"
 
+// Configuração para forçar modo dinâmico e evitar pré-renderização estática
+export const dynamic = "force-dynamic"
+
 // Conexão com MongoDB
 const uri = process.env.MONGO_URI || ""
 

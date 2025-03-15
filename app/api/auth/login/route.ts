@@ -3,17 +3,29 @@ import { MongoClient } from "mongodb"
 import { compare } from "bcryptjs"
 import { sign } from "jsonwebtoken"
 
-// Conexão com MongoDB
-const uri = process.env.MONGO_URI || ""
+// Configuração para forçar modo dinâmico e evitar pré-renderização estática
+export const dynamic = "force-dynamic"
 
 export async function POST(request: Request) {
-  const client = new MongoClient(uri)
+  const uri = process.env.MONGO_URI || ""
+  let client: MongoClient | null = null
 
   try {
-    const body = await request.json()
-    const { email, password, role } = body
+    const { email, password, role } = await request.json()
 
-    await client.connect()
+    if (!email || !password || !role) {
+      return NextResponse.json({ message: "Email, senha e função são obrigatórios" }, { status: 400 })
+    }
+
+    // Inicializar cliente MongoDB
+    try {
+      client = new MongoClient(uri)
+      await client.connect()
+    } catch (dbError) {
+      console.error("Erro ao conectar ao MongoDB:", dbError)
+      return NextResponse.json({ message: "Erro de conexão com o banco de dados" }, { status: 500 })
+    }
+
     const db = client.db("dynamicpro")
     const usersCollection = db.collection("users")
 
@@ -28,8 +40,9 @@ export async function POST(request: Request) {
     }
 
     // Verificar senha
-    const passwordMatch = await compare(password, user.password)
-    if (!passwordMatch) {
+    const isPasswordValid = await compare(password, user.password)
+
+    if (!isPasswordValid) {
       return NextResponse.json({ message: "Senha incorreta" }, { status: 401 })
     }
 
@@ -44,21 +57,28 @@ export async function POST(request: Request) {
       { expiresIn: "7d" },
     )
 
-    // Retornar usuário e token
+    // Retornar token e dados do usuário
     return NextResponse.json({
+      token,
       user: {
         id: user._id.toString(),
         name: user.name,
         email: user.email,
         role: user.role,
       },
-      token,
     })
   } catch (error) {
-    console.error("Erro ao processar login:", error)
-    return NextResponse.json({ message: "Erro interno do servidor" }, { status: 500 })
+    console.error("Erro ao fazer login:", error)
+    return NextResponse.json({ message: "Erro ao processar login" }, { status: 500 })
   } finally {
-    await client.close()
+    if (client) {
+      try {
+        await client.close()
+      } catch (closeError) {
+        console.error("Erro ao fechar conexão MongoDB:", closeError)
+      }
+    }
   }
 }
+
 
