@@ -11,3 +11,4 @@ export function ThemeProvider({
 } & Parameters<typeof NextThemesProvider>[0]) {
   return <NextThemesProvider {...props}>{children}</NextThemesProvider>
 }
+
