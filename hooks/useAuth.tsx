@@ -8,6 +8,8 @@ type User = {
   name: string
   email: string
   role: "student" | "teacher"
+  formation?: string
+  disciplines?: string[]
 }
 
 type AuthContextType = {
@@ -120,6 +122,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null)
 
     try {
+      console.log("Enviando dados para registro:", { ...userData, role })
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
@@ -129,9 +133,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       })
 
       const data = await response.json()
+      console.log("Resposta do servidor:", data)
 
       if (!response.ok) {
-        setError(data.message || "Erro ao registrar")
+        const errorMsg = data.message || "Erro ao registrar"
+        console.error("Erro na resposta:", errorMsg, response.status)
+        setError(errorMsg)
         setLoading(false)
         return false
       }
@@ -165,7 +172,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   return useContext(AuthContext)
 }
-
 
 
 

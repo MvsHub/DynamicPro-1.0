@@ -12,16 +12,21 @@ export async function POST(request: Request) {
   let client: MongoClient | null = null
 
   try {
-    const { name, email, password, role } = await request.json()
+    const { name, email, password, role, formation, disciplines } = await request.json()
 
     if (!name || !email || !password || !role) {
       return NextResponse.json({ message: "Nome, email, senha e função são obrigatórios" }, { status: 400 })
     }
 
+    // Log para depuração
+    console.log("Tentando registrar usuário:", { email, role, formation, disciplines })
+    console.log("URI MongoDB:", uri ? "Configurada" : "Não configurada")
+
     // Inicializar cliente MongoDB
     try {
       client = new MongoClient(uri)
       await client.connect()
+      console.log("Conexão com MongoDB estabelecida com sucesso")
     } catch (dbError) {
       console.error("Erro ao conectar ao MongoDB:", dbError)
       return NextResponse.json({ message: "Erro de conexão com o banco de dados" }, { status: 500 })
@@ -49,6 +54,8 @@ export async function POST(request: Request) {
       email,
       password: hashedPassword,
       role,
+      formation: formation || "",
+      disciplines: disciplines || [],
       createdAt: new Date(),
     })
 
@@ -71,6 +78,8 @@ export async function POST(request: Request) {
         name,
         email,
         role,
+        formation: formation || "",
+        disciplines: disciplines || [],
       },
     })
   } catch (error) {
