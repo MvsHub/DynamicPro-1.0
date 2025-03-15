@@ -2,12 +2,13 @@ import { NextResponse } from "next/server"
 import { MongoClient } from "mongodb"
 import { compare } from "bcryptjs"
 import { sign } from "jsonwebtoken"
+import { getMongoUri } from "@/lib/mongodb"
 
 // Configuração para forçar modo dinâmico e evitar pré-renderização estática
 export const dynamic = "force-dynamic"
 
 export async function POST(request: Request) {
-  const uri = process.env.MONGO_URI || ""
+  const uri = getMongoUri()
   let client: MongoClient | null = null
 
   try {
@@ -80,5 +81,6 @@ export async function POST(request: Request) {
     }
   }
 }
+
 
 

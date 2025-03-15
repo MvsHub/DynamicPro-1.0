@@ -2,12 +2,13 @@ import { NextResponse } from "next/server"
 import { MongoClient, ObjectId } from "mongodb"
 import { verify } from "jsonwebtoken"
 import { headers } from "next/headers"
+import { getMongoUri } from "@/lib/mongodb"
 
 // Configuração para forçar modo dinâmico e evitar pré-renderização estática
 export const dynamic = "force-dynamic"
 
-// Conexão com MongoDB
-const uri = process.env.MONGO_URI || ""
+// Conexão com MongoDB - Corrigir a leitura da variável de ambiente
+const uri = getMongoUri()
 
 // Verificar formato da URI
 if (!uri || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
