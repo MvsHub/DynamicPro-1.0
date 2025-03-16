@@ -10,6 +10,7 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
+import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -85,6 +86,14 @@ export default function RegistroPage() {
           <CardContent>
             <form onSubmit={handleSubmit}>
               <div className="space-y-4">
+                {/* Movido para o topo do formulário */}
+                <Tabs defaultValue="student" onValueChange={(value) => setRole(value as "student" | "teacher")}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="student">Aluno</TabsTrigger>
+                    <TabsTrigger value="teacher">Professor</TabsTrigger>
+                  </TabsList>
+                </Tabs>
+
                 <div>
                   <Input
                     type="text"
@@ -113,18 +122,11 @@ export default function RegistroPage() {
                   />
                 </div>
 
-                <Tabs defaultValue="student" onValueChange={(value) => setRole(value as "student" | "teacher")}>
-                  <TabsList className="grid w-full grid-cols-2">
-                    <TabsTrigger value="student">Aluno</TabsTrigger>
-                    <TabsTrigger value="teacher">Professor</TabsTrigger>
-                  </TabsList>
-                </Tabs>
-
                 <div>
                   <label className="block text-sm font-medium mb-1">Formação</label>
                   <Input
                     type="text"
-                    placeholder="Adm teste formação"
+                    placeholder="Adm Test Formação"
                     value={formation}
                     onChange={(e) => setFormation(e.target.value)}
                   />
@@ -134,13 +136,17 @@ export default function RegistroPage() {
                   <label className="block text-sm font-medium mb-1">Disciplinas</label>
                   <Input
                     type="text"
-                    placeholder="Adm teste disciplina"
+                    placeholder="Adm Test Disciplina"
                     value={disciplines}
                     onChange={(e) => setDisciplines(e.target.value)}
                   />
                 </div>
 
-                {registrationError && <div className="text-red-500 text-sm">{registrationError}</div>}
+                {registrationError && (
+                  <Alert variant="destructive">
+                    <AlertDescription>{registrationError}</AlertDescription>
+                  </Alert>
+                )}
 
                 <Button type="submit" className="w-full" disabled={loading}>
                   {loading ? "Processando..." : "Finalizar Registro"}
@@ -160,5 +166,6 @@ export default function RegistroPage() {
     </div>
   )
 }
+
 
 

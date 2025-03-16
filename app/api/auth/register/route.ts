@@ -7,6 +7,9 @@ import { getMongoUri } from "@/lib/mongodb"
 // Configuração para forçar modo dinâmico e evitar pré-renderização estática
 export const dynamic = "force-dynamic"
 
+// Aumentar o timeout para evitar erros 504
+export const maxDuration = 60 // 60 segundos
+
 export async function POST(request: Request) {
   const uri = getMongoUri()
   let client: MongoClient | null = null
@@ -19,14 +22,21 @@ export async function POST(request: Request) {
     }
 
     // Log para depuração
-    console.log("Tentando registrar usuário:", { email, role, formation, disciplines })
-    console.log("URI MongoDB:", uri ? "Configurada" : "Não configurada")
+    console.log("Tentando registrar usuário:", { email, role })
 
-    // Inicializar cliente MongoDB
+    // Verificar se a URI do MongoDB está configurada
+    if (!uri || (!uri.startsWith("mongodb://") && !uri.startsWith("mongodb+srv://"))) {
+      console.error("URI do MongoDB inválida:", uri ? uri.substring(0, 10) + "..." : "undefined")
+      return NextResponse.json({ message: "Erro de configuração do banco de dados" }, { status: 500 })
+    }
+
+    // Inicializar cliente MongoDB com tratamento de erro e timeout
     try {
-      client = new MongoClient(uri)
+      client = new MongoClient(uri, {
+        serverSelectionTimeoutMS: 50000, // Aumentar timeout para 50 segundos
+        connectTimeoutMS: 50000,
+      })
       await client.connect()
-      console.log("Conexão com MongoDB estabelecida com sucesso")
     } catch (dbError) {
       console.error("Erro ao conectar ao MongoDB:", dbError)
       return NextResponse.json({ message: "Erro de conexão com o banco de dados" }, { status: 500 })
@@ -38,7 +48,6 @@ export async function POST(request: Request) {
     // Verificar se o email já está em uso
     const existingUser = await usersCollection.findOne({
       email,
-      role,
     })
 
     if (existingUser) {
@@ -55,7 +64,7 @@ export async function POST(request: Request) {
       password: hashedPassword,
       role,
       formation: formation || "",
-      disciplines: disciplines || [],
+      disciplines: Array.isArray(disciplines) ? disciplines : disciplines ? [disciplines] : [],
       createdAt: new Date(),
     })
 
@@ -79,12 +88,15 @@ export async function POST(request: Request) {
         email,
         role,
         formation: formation || "",
-        disciplines: disciplines || [],
+        disciplines: Array.isArray(disciplines) ? disciplines : disciplines ? [disciplines] : [],
       },
     })
   } catch (error) {
     console.error("Erro ao registrar usuário:", error)
-    return NextResponse.json({ message: "Erro ao processar registro" }, { status: 500 })
+    return NextResponse.json(
+      { message: "Erro ao processar registro: " + (error instanceof Error ? error.message : String(error)) },
+      { status: 500 },
+    )
   } finally {
     if (client) {
       try {
@@ -95,4 +107,5 @@ export async function POST(request: Request) {
     }
   }
 }
+
 

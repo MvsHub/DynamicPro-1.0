@@ -94,6 +94,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password, role }),
       })
 
+      // Verificar se a resposta é JSON válido
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        console.error("Resposta não-JSON recebida:", text)
+        setError("Erro no servidor: resposta inválida")
+        setLoading(false)
+        return false
+      }
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -130,7 +140,19 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ ...userData, role }),
+        // Aumentar o timeout para evitar erros 504
+        signal: AbortSignal.timeout(30000), // 30 segundos
       })
+
+      // Verificar se a resposta é JSON válido
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        console.error("Resposta não-JSON recebida:", text)
+        setError("Erro no servidor: resposta inválida")
+        setLoading(false)
+        return false
+      }
 
       const data = await response.json()
       console.log("Resposta do servidor:", data)
@@ -150,7 +172,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return true
     } catch (err) {
       console.error("Erro ao registrar:", err)
-      setError("Ocorreu um erro ao tentar registrar")
+      setError("Ocorreu um erro ao tentar registrar. Verifique sua conexão e tente novamente.")
       setLoading(false)
       return false
     }
@@ -172,6 +194,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   return useContext(AuthContext)
 }
+
 
 
 
