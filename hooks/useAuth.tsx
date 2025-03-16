@@ -134,15 +134,21 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log("Enviando dados para registro:", { ...userData, role })
 
+      // Criar um controller para abortar a requisição após um timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 segundos de timeout
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ ...userData, role }),
-        // Aumentar o timeout para evitar erros 504
-        signal: AbortSignal.timeout(30000), // 30 segundos
+        signal: controller.signal,
       })
+
+      // Limpar o timeout
+      clearTimeout(timeoutId)
 
       // Verificar se a resposta é JSON válido
       const contentType = response.headers.get("content-type")
@@ -172,7 +178,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return true
     } catch (err) {
       console.error("Erro ao registrar:", err)
-      setError("Ocorreu um erro ao tentar registrar. Verifique sua conexão e tente novamente.")
+
+      // Verificar se é um erro de timeout
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Tempo limite excedido. O servidor está demorando para responder. Tente novamente mais tarde.")
+      } else {
+        setError("Ocorreu um erro ao tentar registrar. Verifique sua conexão e tente novamente.")
+      }
+
       setLoading(false)
       return false
     }
@@ -194,6 +207,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   return useContext(AuthContext)
 }
+
 
 
 

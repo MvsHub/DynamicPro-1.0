@@ -8,7 +8,7 @@ import { getMongoUri } from "@/lib/mongodb"
 export const dynamic = "force-dynamic"
 
 // Aumentar o timeout para evitar erros 504
-export const maxDuration = 60 // 60 segundos
+export const maxDuration = 10 // 10 segundos é suficiente para a maioria dos casos
 
 export async function POST(request: Request) {
   const uri = getMongoUri()
@@ -33,8 +33,8 @@ export async function POST(request: Request) {
     // Inicializar cliente MongoDB com tratamento de erro e timeout
     try {
       client = new MongoClient(uri, {
-        serverSelectionTimeoutMS: 50000, // Aumentar timeout para 50 segundos
-        connectTimeoutMS: 50000,
+        serverSelectionTimeoutMS: 5000, // Reduzir timeout para 5 segundos
+        connectTimeoutMS: 5000,
       })
       await client.connect()
     } catch (dbError) {
@@ -107,5 +107,6 @@ export async function POST(request: Request) {
     }
   }
 }
+
 
 
