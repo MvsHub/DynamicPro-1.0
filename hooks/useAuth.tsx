@@ -8,6 +8,8 @@ type User = {
   name: string
   email: string
   role: "student" | "teacher"
+  formation?: string
+  disciplines?: string[]
 }
 
 type AuthContextType = {
@@ -92,6 +94,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         body: JSON.stringify({ email, password, role }),
       })
 
+      // Verificar se a resposta é JSON válido
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        console.error("Resposta não-JSON recebida:", text)
+        setError("Erro no servidor: resposta inválida")
+        setLoading(false)
+        return false
+      }
+
       const data = await response.json()
 
       if (!response.ok) {
@@ -113,6 +125,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  // No método register, adicionar tratamento para o modo fallback
+
   const register = async (userData: any, role: "student" | "teacher") => {
     if (!isClient) return false
 
@@ -120,18 +134,46 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null)
 
     try {
+      console.log("Enviando dados para registro:", { ...userData, role })
+
+      // Criar um controller para abortar a requisição após um timeout
+      const controller = new AbortController()
+      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 segundos de timeout
+
       const response = await fetch("/api/auth/register", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ ...userData, role }),
+        signal: controller.signal,
       })
 
-      const data = await response.json()
+      // Limpar o timeout
+      clearTimeout(timeoutId)
 
-      if (!response.ok) {
-        setError(data.message || "Erro ao registrar")
+      // Verificar se a resposta é JSON válido
+      const contentType = response.headers.get("content-type")
+      if (!contentType || !contentType.includes("application/json")) {
+        const text = await response.text()
+        console.error("Resposta não-JSON recebida:", text)
+        setError("Erro no servidor: resposta inválida")
+        setLoading(false)
+        return false
+      }
+
+      const data = await response.json()
+      console.log("Resposta do servidor:", data)
+
+      // Verificar se estamos usando o modo fallback
+      if (data.fallback || data.mock) {
+        console.warn("Usando modo fallback/mock para autenticação")
+      }
+
+      if (!response.ok && !data.fallback) {
+        const errorMsg = data.message || "Erro ao registrar"
+        console.error("Erro na resposta:", errorMsg, response.status)
+        setError(errorMsg)
         setLoading(false)
         return false
       }
@@ -143,7 +185,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return true
     } catch (err) {
       console.error("Erro ao registrar:", err)
-      setError("Ocorreu um erro ao tentar registrar")
+
+      // Verificar se é um erro de timeout
+      if (err instanceof DOMException && err.name === "AbortError") {
+        setError("Tempo limite excedido. O servidor está demorando para responder. Tente novamente mais tarde.")
+      } else {
+        setError("Ocorreu um erro ao tentar registrar. Verifique sua conexão e tente novamente.")
+      }
+
       setLoading(false)
       return false
     }
@@ -165,6 +214,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   return useContext(AuthContext)
 }
+
+
 
 
 

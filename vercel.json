@@ -2,7 +2,15 @@
   "version": 2,
   "buildCommand": "npm run build",
   "devCommand": "npm run dev",
+<<<<<<< HEAD
   "installCommand": "npm install",
   "framework": "nextjs",
   "outputDirectory": ".next"
 }
+=======
+  "framework": "nextjs",
+  "routes": [{ "handle": "filesystem" }, { "src": "/(.*)", "dest": "/" }]
+}
+
+
+>>>>>>> 7efb6867513876d6299191c6e9cea57bb525a9ef

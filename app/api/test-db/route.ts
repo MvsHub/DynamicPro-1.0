@@ -9,6 +9,7 @@ export async function GET() {
   const uri = getMongoUri()
   let client: MongoClient | null = null
   let mongoStatus = "unknown"
+  let errorDetails = null
 
   // Verificar se a URI do MongoDB está configurada corretamente
   const isMongoUriValid = uri && (uri.startsWith("mongodb://") || uri.startsWith("mongodb+srv://"))
@@ -23,10 +24,27 @@ export async function GET() {
       const db = client.db("dynamicpro")
       await db.command({ ping: 1 })
 
+      // Verificar se a coleção users existe
+      const collections = await db.listCollections().toArray()
+      const hasUsersCollection = collections.some((col) => col.name === "users")
+
       mongoStatus = "connected"
+
+      return NextResponse.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        mongodb: {
+          configured: true,
+          status: mongoStatus,
+          uri_valid: isMongoUriValid,
+          collections: collections.map((c) => c.name),
+          has_users_collection: hasUsersCollection,
+        },
+      })
     } catch (error) {
       console.error("Erro ao verificar conexão com MongoDB:", error)
       mongoStatus = "error"
+      errorDetails = error instanceof Error ? error.message : String(error)
     } finally {
       if (client) {
         try {
@@ -40,24 +58,18 @@ export async function GET() {
     mongoStatus = "invalid_uri"
   }
 
-  return NextResponse.json({
-    status: "ok",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-    mongodb: {
-      configured: isMongoUriValid,
-      status: mongoStatus,
+  return NextResponse.json(
+    {
+      status: "error",
+      timestamp: new Date().toISOString(),
+      mongodb: {
+        configured: isMongoUriValid,
+        status: mongoStatus,
+        uri_valid: isMongoUriValid,
+        error: errorDetails,
+      },
     },
-    version: "1.0.0",
-  })
-}
-
-// Adicionar também um endpoint POST para testes mais completos
-export async function POST() {
-  return NextResponse.json({
-    status: "ok",
-    method: "POST",
-    timestamp: new Date().toISOString(),
-  })
+    { status: mongoStatus === "invalid_uri" ? 500 : 200 },
+  )
 }
 

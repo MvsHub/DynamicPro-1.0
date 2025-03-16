@@ -3,46 +3,61 @@
 import type React from "react"
 
 import { useState } from "react"
-import Link from "next/link"
 import { useRouter } from "next/navigation"
-import { Button } from "@/components/ui/button"
-import { Card } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import Link from "next/link"
 import { useAuth } from "@/hooks/useAuth"
+import { Button } from "@/components/ui/button"
+import { Input } from "@/components/ui/input"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
 
-export default function RegisterPage() {
-  const [userType, setUserType] = useState<"student" | "teacher">("student")
-  const [step, setStep] = useState(1)
-  const [formData, setFormData] = useState({
-    name: "",
-    email: "",
-    password: "",
-    course: "",
-    formation: "",
-    profession: "",
-    subject: "",
-  })
-  const { register, loading, error } = useAuth()
+export default function RegistroPage() {
   const router = useRouter()
-
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { id, value } = e.target
-    setFormData((prev) => ({ ...prev, [id]: value }))
-  }
+  const { register, error } = useAuth()
+  const [name, setName] = useState("")
+  const [email, setEmail] = useState("")
+  const [password, setPassword] = useState("")
+  const [role, setRole] = useState<"student" | "teacher">("student")
+  const [formation, setFormation] = useState("")
+  const [disciplines, setDisciplines] = useState("")
+  const [loading, setLoading] = useState(false)
+  const [registrationError, setRegistrationError] = useState<string | null>(null)
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setLoading(true)
+    setRegistrationError(null)
 
-    if (step === 1) {
-      setStep(2)
-      return
-    }
+    try {
+      // Log para depuração
+      console.log("Enviando dados de registro:", { name, email, password, role, formation, disciplines })
 
-    const success = await register(formData, userType)
-    if (success) {
-      router.push("/dashboard")
+      const disciplinesArray = disciplines
+        .split(",")
+        .map((item) => item.trim())
+        .filter(Boolean)
+
+      const success = await register(
+        {
+          name,
+          email,
+          password,
+          formation,
+          disciplines: disciplinesArray,
+        },
+        role,
+      )
+
+      if (success) {
+        router.push("/dashboard")
+      } else {
+        setRegistrationError(error || "Ocorreu um erro ao tentar registrar")
+      }
+    } catch (err) {
+      console.error("Erro ao registrar:", err)
+      setRegistrationError("Ocorreu um erro ao tentar registrar")
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -62,130 +77,95 @@ export default function RegisterPage() {
       </header>
 
       <main className="flex-1 flex items-center justify-center p-4">
-        <div className="w-full max-w-md space-y-8">
-          <div className="text-center">
-            <h1 className="text-3xl font-bold">Crie sua conta</h1>
-            <p className="mt-2 text-muted-foreground">Registre-se no Dynamic Pro para ter acesso à plataforma</p>
-          </div>
+        <Card className="w-full max-w-md">
+          <CardHeader className="text-center">
+            <CardTitle className="text-2xl">Crie sua conta</CardTitle>
+            <CardDescription>Registre-se no Dynamic Pro para ter acesso à plataforma</CardDescription>
+          </CardHeader>
+          <CardContent>
+            <form onSubmit={handleSubmit}>
+              <div className="space-y-4">
+                {/* Movido para o topo do formulário */}
+                <Tabs defaultValue="student" onValueChange={(value) => setRole(value as "student" | "teacher")}>
+                  <TabsList className="grid w-full grid-cols-2">
+                    <TabsTrigger value="student">Aluno</TabsTrigger>
+                    <TabsTrigger value="teacher">Professor</TabsTrigger>
+                  </TabsList>
+                </Tabs>
 
-          <Card>
-            <Tabs
-              value={userType}
-              onValueChange={(value) => setUserType(value as "student" | "teacher")}
-              className="w-full"
-            >
-              <TabsList className="grid w-full grid-cols-2">
-                <TabsTrigger value="student">Aluno</TabsTrigger>
-                <TabsTrigger value="teacher">Professor</TabsTrigger>
-              </TabsList>
+                <div>
+                  <Input
+                    type="text"
+                    placeholder="Nome completo"
+                    value={name}
+                    onChange={(e) => setName(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="email"
+                    placeholder="Email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    required
+                  />
+                </div>
+                <div>
+                  <Input
+                    type="password"
+                    placeholder="Senha"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    required
+                  />
+                </div>
 
-              <TabsContent value="student">
-                <form onSubmit={handleSubmit} className="space-y-4 p-6">
-                  {step === 1 ? (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nome completo</Label>
-                        <Input id="name" value={formData.name} onChange={handleChange} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" value={formData.email} onChange={handleChange} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Senha</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={formData.password}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="course">Curso</Label>
-                        <Input id="course" value={formData.course} onChange={handleChange} required />
-                      </div>
-                    </div>
-                  )}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Formação</label>
+                  <Input
+                    type="text"
+                    placeholder="Adm Test Formação"
+                    value={formation}
+                    onChange={(e) => setFormation(e.target.value)}
+                  />
+                </div>
 
-                  {error && <div className="text-sm text-destructive">{error}</div>}
+                <div>
+                  <label className="block text-sm font-medium mb-1">Disciplinas</label>
+                  <Input
+                    type="text"
+                    placeholder="Adm Test Disciplina"
+                    value={disciplines}
+                    onChange={(e) => setDisciplines(e.target.value)}
+                  />
+                </div>
 
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Processando..." : step === 1 ? "Próximo" : "Finalizar Registro"}
-                  </Button>
-
-                  <div className="text-center text-sm">
-                    <Link href="/login" className="text-primary hover:underline">
-                      Já tem uma conta? Entre aqui
-                    </Link>
+                {registrationError && (
+                  <div className="p-3 text-sm border border-red-500 bg-red-50 text-red-600 rounded-md">
+                    {registrationError}
                   </div>
-                </form>
-              </TabsContent>
+                )}
 
-              <TabsContent value="teacher">
-                <form onSubmit={handleSubmit} className="space-y-4 p-6">
-                  {step === 1 ? (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="name">Nome completo</Label>
-                        <Input id="name" value={formData.name} onChange={handleChange} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="email">Email</Label>
-                        <Input id="email" type="email" value={formData.email} onChange={handleChange} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="password">Senha</Label>
-                        <Input
-                          id="password"
-                          type="password"
-                          value={formData.password}
-                          onChange={handleChange}
-                          required
-                        />
-                      </div>
-                    </div>
-                  ) : (
-                    <div className="space-y-4">
-                      <div className="space-y-2">
-                        <Label htmlFor="formation">Formação</Label>
-                        <Input id="formation" value={formData.formation} onChange={handleChange} required />
-                      </div>
-                      <div className="space-y-2">
-                        <Label htmlFor="subject">Disciplinas</Label>
-                        <Input
-                          id="subject"
-                          value={formData.subject}
-                          onChange={handleChange}
-                          required
-                          placeholder="Ex: Matemática, Física"
-                        />
-                      </div>
-                    </div>
-                  )}
+                <Button type="submit" className="w-full" disabled={loading}>
+                  {loading ? "Processando..." : "Finalizar Registro"}
+                </Button>
+              </div>
+            </form>
 
-                  {error && <div className="text-sm text-destructive">{error}</div>}
-
-                  <Button type="submit" className="w-full" disabled={loading}>
-                    {loading ? "Processando..." : step === 1 ? "Próximo" : "Finalizar Registro"}
-                  </Button>
-
-                  <div className="text-center text-sm">
-                    <Link href="/login" className="text-primary hover:underline">
-                      Já tem uma conta? Entre aqui
-                    </Link>
-                  </div>
-                </form>
-              </TabsContent>
-            </Tabs>
-          </Card>
-        </div>
+            <div className="mt-4 text-center text-sm">
+              <span>Já tem uma conta? </span>
+              <Link href="/login" className="text-primary hover:underline">
+                Entre aqui
+              </Link>
+            </div>
+          </CardContent>
+        </Card>
       </main>
     </div>
   )
 }
+
+
 
 

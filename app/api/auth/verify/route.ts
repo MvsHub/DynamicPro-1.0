@@ -1,13 +1,14 @@
 import { NextResponse } from "next/server"
-import { MongoClient, ObjectId } from "mongodb"
+import { ObjectId } from "mongodb"
 import { verify } from "jsonwebtoken"
 import { headers } from "next/headers"
+import { connectToMongoDB } from "@/lib/mongodb"
 
-// Conexão com MongoDB
-const uri = process.env.MONGO_URI || ""
+// Configuração para forçar modo dinâmico e evitar pré-renderização estática
+export const dynamic = "force-dynamic"
 
 export async function GET(request: Request) {
-  const client = new MongoClient(uri)
+  let connection = null
 
   try {
     const headersList = headers()
@@ -26,33 +27,36 @@ export async function GET(request: Request) {
       role: string
     }
 
-    await client.connect()
-    const db = client.db("dynamicpro")
-    const usersCollection = db.collection("users")
+    // Conectar ao MongoDB usando a função atualizada
+    try {
+      connection = await connectToMongoDB()
+      const usersCollection = connection.db.collection("users")
 
-    // Buscar usuário
-    const user = await usersCollection.findOne({
-      _id: new ObjectId(decoded.id),
-    })
+      // Buscar usuário
+      const user = await usersCollection.findOne({
+        _id: new ObjectId(decoded.id),
+      })
 
-    if (!user) {
-      return NextResponse.json({ message: "Usuário não encontrado" }, { status: 404 })
+      if (!user) {
+        return NextResponse.json({ message: "Usuário não encontrado" }, { status: 404 })
+      }
+
+      // Retornar usuário
+      return NextResponse.json({
+        user: {
+          id: user._id.toString(),
+          name: user.name,
+          email: user.email,
+          role: user.role,
+        },
+      })
+    } catch (dbError) {
+      console.error("Erro ao conectar ou operar no MongoDB:", dbError)
+      return NextResponse.json({ message: "Erro de conexão com o banco de dados" }, { status: 500 })
     }
-
-    // Retornar usuário
-    return NextResponse.json({
-      user: {
-        id: user._id.toString(),
-        name: user.name,
-        email: user.email,
-        role: user.role,
-      },
-    })
   } catch (error) {
     console.error("Erro ao verificar token:", error)
     return NextResponse.json({ message: "Token inválido" }, { status: 401 })
-  } finally {
-    await client.close()
   }
 }
 

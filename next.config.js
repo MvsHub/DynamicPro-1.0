@@ -5,6 +5,27 @@ const nextConfig = {
   images: {
     domains: ["placeholder.com"],
   },
+  // Configuração de output para o Vercel
+  output: "standalone",
+  // Configuração de redirecionamentos
+  async redirects() {
+    return [
+      {
+        source: "/",
+        destination: "/app",
+        permanent: false,
+      },
+    ]
+  },
+  // Configuração de reescritas
+  async rewrites() {
+    return [
+      {
+        source: "/",
+        destination: "/app/page",
+      },
+    ]
+  },
 }
 
 module.exports = nextConfig
