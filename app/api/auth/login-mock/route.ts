@@ -4,28 +4,6 @@ import { sign } from "jsonwebtoken"
 // Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
-// Usuários mock para teste
-const mockUsers = [
-  {
-    id: "mock_teacher_1",
-    name: "Professor Teste",
-    email: "professor@teste.com",
-    password: "senha123",
-    role: "teacher",
-    formation: "Doutorado em Educação",
-    disciplines: ["Matemática", "Física"],
-  },
-  {
-    id: "mock_student_1",
-    name: "Aluno Teste",
-    email: "aluno@teste.com",
-    password: "senha123",
-    role: "student",
-    formation: "Ensino Médio",
-    disciplines: [],
-  },
-]
-
 export async function POST(request: Request) {
   try {
     // Obter dados do corpo da requisição
@@ -79,4 +57,5 @@ export async function POST(request: Request) {
     )
   }
 }
+
 

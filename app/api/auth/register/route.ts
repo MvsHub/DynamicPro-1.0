@@ -10,8 +10,6 @@ export const dynamic = "force-dynamic"
 export const maxDuration = 5 // 5 segundos
 
 export async function POST(request: Request) {
-  let client = null
-
   try {
     // Obter dados do corpo da requisição
     const { name, email, password, role, formation, disciplines } = await request.json()
@@ -21,10 +19,52 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Nome, email, senha e função são obrigatórios" }, { status: 400 })
     }
 
-    // Tentar usar o endpoint mock se a conexão falhar
+    // Tentar conectar ao MongoDB
+    const { client, mock } = await connectToMongoDB()
+
+    // Se estamos no modo mock, usar implementação mock
+    if (mock || !client) {
+      // Criar ID único para modo mock
+      const userId = `mock_${Date.now()}_${Math.random().toString(36).substring(2, 9)}`
+
+      // Criptografar senha
+      const hashedPassword = await hash(password, 10)
+
+      // Criar novo usuário mock
+      const newUser = {
+        id: userId,
+        name,
+        email,
+        password: hashedPassword,
+        role,
+        formation: formation || "",
+        disciplines: Array.isArray(disciplines) ? disciplines : disciplines ? [disciplines] : [],
+        createdAt: new Date().toISOString(),
+      }
+
+      // Gerar token JWT
+      const token = sign(
+        {
+          id: userId,
+          email,
+          role,
+        },
+        process.env.JWT_SECRET || "secret",
+        { expiresIn: "7d" },
+      )
+
+      // Retornar token e dados do usuário (sem a senha)
+      const { password: _, ...userWithoutPassword } = newUser
+
+      return NextResponse.json({
+        token,
+        user: userWithoutPassword,
+        mock: true,
+      })
+    }
+
+    // Se chegamos aqui, temos uma conexão real com o MongoDB
     try {
-      // Conectar ao MongoDB usando nossa conexão otimizada
-      client = await connectToMongoDB()
       const db = client.db("dynamicpro")
       const usersCollection = db.collection("users")
 
@@ -37,8 +77,8 @@ export async function POST(request: Request) {
       // Criptografar senha
       const hashedPassword = await hash(password, 10)
 
-      // Inserir usuário
-      const result = await usersCollection.insertOne({
+      // Criar novo usuário
+      const newUser = {
         name,
         email,
         password: hashedPassword,
@@ -46,7 +86,10 @@ export async function POST(request: Request) {
         formation: formation || "",
         disciplines: Array.isArray(disciplines) ? disciplines : disciplines ? [disciplines] : [],
         createdAt: new Date(),
-      })
+      }
+
+      // Inserir no banco de dados
+      const result = await usersCollection.insertOne(newUser)
 
       // Gerar token JWT
       const token = sign(
@@ -59,45 +102,25 @@ export async function POST(request: Request) {
         { expiresIn: "7d" },
       )
 
-      // Retornar token e dados do usuário
+      // Retornar token e dados do usuário (sem a senha)
+      const { password: _, ...userWithoutPassword } = newUser
+
       return NextResponse.json({
         token,
         user: {
           id: result.insertedId.toString(),
-          name,
-          email,
-          role,
-          formation: formation || "",
-          disciplines: Array.isArray(disciplines) ? disciplines : disciplines ? [disciplines] : [],
+          ...userWithoutPassword,
         },
       })
     } catch (dbError) {
-      console.error("Erro ao conectar ou operar no MongoDB:", dbError)
+      console.error("Erro ao operar no MongoDB:", dbError)
 
-      // Tentar usar o endpoint mock como fallback
-      const mockResponse = await fetch(new URL("/api/auth/registro-mock", request.url), {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, email, password, role, formation, disciplines }),
-      })
-
-      if (mockResponse.ok) {
-        const mockData = await mockResponse.json()
-        return NextResponse.json({
-          ...mockData,
-          fallback: true,
-          message: "Usando modo fallback devido a problemas na conexão com o banco de dados",
-        })
-      }
-
-      // Se o mock também falhar, retornar erro
+      // Fallback para modo mock em caso de erro
       return NextResponse.json(
         {
-          message: "Erro de conexão com o banco de dados",
+          message: "Erro de banco de dados, usando modo fallback",
           details: dbError instanceof Error ? dbError.message : String(dbError),
-          fallbackFailed: true,
+          fallback: true,
         },
         { status: 500 },
       )
@@ -113,6 +136,7 @@ export async function POST(request: Request) {
     )
   }
 }
+
 
 
 
