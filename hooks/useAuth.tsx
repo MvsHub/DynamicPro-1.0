@@ -125,6 +125,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  // No método register, adicionar tratamento para o modo fallback
+
   const register = async (userData: any, role: "student" | "teacher") => {
     if (!isClient) return false
 
@@ -163,7 +165,12 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json()
       console.log("Resposta do servidor:", data)
 
-      if (!response.ok) {
+      // Verificar se estamos usando o modo fallback
+      if (data.fallback || data.mock) {
+        console.warn("Usando modo fallback/mock para autenticação")
+      }
+
+      if (!response.ok && !data.fallback) {
         const errorMsg = data.message || "Erro ao registrar"
         console.error("Erro na resposta:", errorMsg, response.status)
         setError(errorMsg)
@@ -207,6 +214,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   return useContext(AuthContext)
 }
+
 
 
 

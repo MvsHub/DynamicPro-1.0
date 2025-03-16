@@ -1,12 +1,17 @@
 import { NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { sign } from "jsonwebtoken"
-import { connectToMongoDB } from "@/lib/mongodb-config"
+import { connectToMongoDB } from "@/lib/mongodb-serverless"
 
 // Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
+// Reduzir o timeout para evitar FUNCTION_INVOCATION_TIMEOUT
+export const maxDuration = 5 // 5 segundos
+
 export async function POST(request: Request) {
+  let client = null
+
   try {
     // Obter dados do corpo da requisição
     const { name, email, password, role, formation, disciplines } = await request.json()
@@ -16,14 +21,15 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Nome, email, senha e função são obrigatórios" }, { status: 400 })
     }
 
+    // Tentar usar o endpoint mock se a conexão falhar
     try {
-      // Conectar ao MongoDB usando a configuração segura
-      const { db } = await connectToMongoDB()
+      // Conectar ao MongoDB usando nossa conexão otimizada
+      client = await connectToMongoDB()
+      const db = client.db("dynamicpro")
       const usersCollection = db.collection("users")
 
       // Verificar se o email já está em uso
       const existingUser = await usersCollection.findOne({ email })
-
       if (existingUser) {
         return NextResponse.json({ message: "Email já cadastrado" }, { status: 409 })
       }
@@ -67,10 +73,31 @@ export async function POST(request: Request) {
       })
     } catch (dbError) {
       console.error("Erro ao conectar ou operar no MongoDB:", dbError)
+
+      // Tentar usar o endpoint mock como fallback
+      const mockResponse = await fetch(new URL("/api/auth/registro-mock", request.url), {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ name, email, password, role, formation, disciplines }),
+      })
+
+      if (mockResponse.ok) {
+        const mockData = await mockResponse.json()
+        return NextResponse.json({
+          ...mockData,
+          fallback: true,
+          message: "Usando modo fallback devido a problemas na conexão com o banco de dados",
+        })
+      }
+
+      // Se o mock também falhar, retornar erro
       return NextResponse.json(
         {
           message: "Erro de conexão com o banco de dados",
           details: dbError instanceof Error ? dbError.message : String(dbError),
+          fallbackFailed: true,
         },
         { status: 500 },
       )
@@ -86,6 +113,7 @@ export async function POST(request: Request) {
     )
   }
 }
+
 
 
 
