@@ -10,7 +10,6 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card"
-import { Alert, AlertDescription } from "@/components/ui/alert"
 
 export default function RegistroPage() {
   const router = useRouter()
@@ -143,9 +142,9 @@ export default function RegistroPage() {
                 </div>
 
                 {registrationError && (
-                  <Alert variant="destructive">
-                    <AlertDescription>{registrationError}</AlertDescription>
-                  </Alert>
+                  <div className="p-3 text-sm border border-red-500 bg-red-50 text-red-600 rounded-md">
+                    {registrationError}
+                  </div>
                 )}
 
                 <Button type="submit" className="w-full" disabled={loading}>
@@ -166,6 +165,7 @@ export default function RegistroPage() {
     </div>
   )
 }
+
 
 
 
