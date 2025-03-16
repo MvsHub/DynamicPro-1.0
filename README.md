@@ -1,71 +1,34 @@
-/** @type {import('tailwindcss').Config} */
-module.exports = {
-  darkMode: ["class"],
-  content: [
-    "./pages/**/*.{ts,tsx}",
-    "./components/**/*.{ts,tsx}",
-    "./app/**/*.{ts,tsx}",
-    "./src/**/*.{ts,tsx}",
-    "*.{js,ts,jsx,tsx,mdx}",
-  ],
-  theme: {
-    extend: {
-      colors: {
-        border: "hsl(var(--border))",
-        input: "hsl(var(--input))",
-        ring: "hsl(var(--ring))",
-        background: "hsl(var(--background) / <alpha-value>)",
-        foreground: "hsl(var(--foreground) / <alpha-value>)",
-        primary: {
-          DEFAULT: "hsl(var(--primary) / <alpha-value>)",
-          foreground: "hsl(var(--primary-foreground) / <alpha-value>)",
-        },
-        secondary: {
-          DEFAULT: "hsl(var(--secondary) / <alpha-value>)",
-          foreground: "hsl(var(--secondary-foreground) / <alpha-value>)",
-        },
-        destructive: {
-          DEFAULT: "hsl(var(--destructive) / <alpha-value>)",
-          foreground: "hsl(var(--destructive-foreground) / <alpha-value>)",
-        },
-        muted: {
-          DEFAULT: "hsl(var(--muted) / <alpha-value>)",
-          foreground: "hsl(var(--muted-foreground) / <alpha-value>)",
-        },
-        accent: {
-          DEFAULT: "hsl(var(--accent) / <alpha-value>)",
-          foreground: "hsl(var(--accent-foreground) / <alpha-value>)",
-        },
-        popover: {
-          DEFAULT: "hsl(var(--popover) / <alpha-value>)",
-          foreground: "hsl(var(--popover-foreground) / <alpha-value>)",
-        },
-        card: {
-          DEFAULT: "hsl(var(--card) / <alpha-value>)",
-          foreground: "hsl(var(--card-foreground) / <alpha-value>)",
-        },
-      },
-      borderRadius: {
-        lg: "var(--radius)",
-        md: "calc(var(--radius) - 2px)",
-        sm: "calc(var(--radius) - 4px)",
-      },
-      keyframes: {
-        "accordion-down": {
-          from: { height: 0 },
-          to: { height: "var(--radix-accordion-content-height)" },
-        },
-        "accordion-up": {
-          from: { height: "var(--radix-accordion-content-height)" },
-          to: { height: 0 },
-        },
-      },
-      animation: {
-        "accordion-down": "accordion-down 0.2s ease-out",
-        "accordion-up": "accordion-up 0.2s ease-out",
-      },
-    },
-  },
-  plugins: [require("tailwindcss-animate")],
-}
+# Dynamic Pro 1.0
 
+Plataforma de ensino dinâmica para alunos e professores, transformando a maneira como você aprende e ensina.
+
+## Status do Projeto
+
+O projeto está atualmente em desenvolvimento com as seguintes funcionalidades:
+
+- ✅ Autenticação de usuários (professores e alunos)
+- ✅ Dashboard personalizado por tipo de usuário
+- ✅ Modo mock para desenvolvimento sem dependência do MongoDB
+- 🚧 Gerenciamento de cursos
+- 🚧 Matrícula de alunos
+- 🚧 Atividades e avaliações
+
+## Modo Mock
+
+O projeto está configurado para funcionar em "modo mock" quando a conexão com o MongoDB falha ou não está disponível. Isso permite o desenvolvimento e teste da interface sem depender de uma conexão de banco de dados ativa.
+
+### Endpoints Disponíveis
+
+- `/api/auth/login-mock`: Login simulado
+- `/api/auth/registro-mock`: Registro simulado
+- `/api/auth/verify`: Verificação de token
+- `/api/init-db`: Inicialização do banco de dados (mock)
+- `/api/cursos`: Gerenciamento de cursos (mock)
+- `/api/cursos/matricula`: Matrícula de alunos em cursos (mock)
+- `/api/diagnostico-detalhado`: Diagnóstico da conexão com MongoDB
+
+## Desenvolvimento Local
+
+1. Clone o repositório
+2. Instale as dependências: `npm install`
+3. Configure as variáveis de ambiente:
