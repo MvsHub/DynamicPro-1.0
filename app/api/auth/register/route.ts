@@ -1,16 +1,20 @@
 import { NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { sign } from "jsonwebtoken"
-import { connectToMongoDB } from "@/lib/mongodb"
+import { MongoClient } from "mongodb"
 
-// Configuração para forçar modo dinâmico e evitar pré-renderização estática
+// Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
-// Aumentar o timeout para evitar erros 504
-export const maxDuration = 10 // 10 segundos
-
 export async function POST(request: Request) {
-  let connection = null
+  // Usar uma URI de conexão direta para testes
+  // Esta é uma URI de exemplo - você deve substituir pela sua própria URI
+  const uri = process.env.MONGO_URI || ""
+
+  // Log para depuração
+  console.log("Tentando conectar ao MongoDB com URI:", uri ? "URI configurada" : "URI não configurada")
+
+  let client: MongoClient | null = null
 
   try {
     // Obter dados do corpo da requisição
@@ -21,13 +25,20 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Nome, email, senha e função são obrigatórios" }, { status: 400 })
     }
 
-    // Log para depuração
-    console.log("Tentando registrar usuário:", { email, role })
+    // Verificar se a URI está configurada
+    if (!uri) {
+      console.error("URI do MongoDB não configurada")
+      return NextResponse.json({ message: "Erro de configuração do banco de dados" }, { status: 500 })
+    }
 
-    // Conectar ao MongoDB usando a função atualizada
+    // Conectar ao MongoDB
     try {
-      connection = await connectToMongoDB()
-      const usersCollection = connection.db.collection("users")
+      client = new MongoClient(uri)
+      await client.connect()
+
+      // Usar o banco de dados dynamicpro
+      const db = client.db("dynamicpro")
+      const usersCollection = db.collection("users")
 
       // Verificar se o email já está em uso
       const existingUser = await usersCollection.findOne({ email })
@@ -75,16 +86,31 @@ export async function POST(request: Request) {
       })
     } catch (dbError) {
       console.error("Erro ao conectar ou operar no MongoDB:", dbError)
-      return NextResponse.json({ message: "Erro de conexão com o banco de dados" }, { status: 500 })
+      return NextResponse.json(
+        {
+          message: "Erro de conexão com o banco de dados",
+          details: dbError instanceof Error ? dbError.message : String(dbError),
+        },
+        { status: 500 },
+      )
     }
   } catch (error) {
     console.error("Erro ao processar registro:", error)
     return NextResponse.json(
       {
-        message: "Erro ao processar registro: " + (error instanceof Error ? error.message : String(error)),
+        message: "Erro ao processar registro",
+        details: error instanceof Error ? error.message : String(error),
       },
       { status: 500 },
     )
+  } finally {
+    if (client) {
+      try {
+        await client.close()
+      } catch (closeError) {
+        console.error("Erro ao fechar conexão MongoDB:", closeError)
+      }
+    }
   }
 }
 
