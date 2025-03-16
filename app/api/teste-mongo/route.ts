@@ -1,17 +1,13 @@
 import { NextResponse } from "next/server"
-import { MongoClient } from "mongodb"
+import { connectToMongoDB, closeConnection } from "@/lib/mongodb-config"
 
 // Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
-// Reduzir o timeout para evitar FUNCTION_INVOCATION_TIMEOUT
-export const maxDuration = 5 // 5 segundos
-
 export async function GET() {
-  const uri = process.env.MONGO_URI || ""
-  let client: MongoClient | null = null
-
   try {
+    const uri = process.env.MONGO_URI || ""
+
     // Verificar se a URI está configurada
     if (!uri) {
       return NextResponse.json({
@@ -32,47 +28,45 @@ export async function GET() {
       })
     }
 
-    // Tentar conectar ao MongoDB com opções para ignorar erros SSL
-    client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 3000, // Reduzir timeout para 3 segundos
-      connectTimeoutMS: 3000,
-      ssl: true,
-      tlsAllowInvalidCertificates: true, // Ignorar erros de certificado SSL
-      tlsAllowInvalidHostnames: true, // Ignorar erros de hostname SSL
-    })
+    // Tentar conectar ao MongoDB usando a configuração segura
+    const { client, db } = await connectToMongoDB()
 
-    await client.connect()
+    // Listar coleções para verificar a conexão
+    const collections = await db.listCollections().toArray()
+    const collectionNames = collections.map((col) => col.name)
 
-    // Verificar conexão com ping
-    await client.db("admin").command({ ping: 1 })
+    // Verificar se o banco de dados tem as coleções necessárias
+    const hasUsersCollection = collectionNames.includes("users")
+
+    // Fechar a conexão após o teste
+    await closeConnection()
 
     return NextResponse.json({
       success: true,
-      message: "Conexão bem-sucedida",
+      message: "Conexão com MongoDB estabelecida com sucesso",
       uri_provided: true,
       uri_format: "válido",
       uri_sample: uri.substring(0, 10) + "...",
+      collections: collectionNames,
+      has_users_collection: hasUsersCollection,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
+    // Garantir que a conexão seja fechada em caso de erro
+    await closeConnection()
+
     return NextResponse.json({
       success: false,
       error: error instanceof Error ? error.message : String(error),
-      uri_provided: uri ? true : false,
-      uri_format: uri.startsWith("mongodb://") || uri.startsWith("mongodb+srv://") ? "válido mas com erro" : "inválido",
-      uri_sample: uri ? uri.substring(0, 10) + "..." : "não fornecida",
+      uri_provided: process.env.MONGO_URI ? true : false,
+      uri_format:
+        process.env.MONGO_URI &&
+        (process.env.MONGO_URI.startsWith("mongodb://") || process.env.MONGO_URI.startsWith("mongodb+srv://"))
+          ? "válido mas com erro"
+          : "inválido",
+      uri_sample: process.env.MONGO_URI ? process.env.MONGO_URI.substring(0, 10) + "..." : "não fornecida",
       timestamp: new Date().toISOString(),
     })
-  } finally {
-    if (client) {
-      try {
-        await client.close()
-      } catch (closeError) {
-        console.error("Erro ao fechar conexão MongoDB:", closeError)
-      }
-    }
   }
 }
-
-
 

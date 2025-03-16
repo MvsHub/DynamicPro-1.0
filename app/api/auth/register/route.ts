@@ -1,18 +1,12 @@
 import { NextResponse } from "next/server"
 import { hash } from "bcryptjs"
 import { sign } from "jsonwebtoken"
-import { MongoClient } from "mongodb"
+import { connectToMongoDB } from "@/lib/mongodb-config"
 
 // Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
-// Reduzir o timeout para evitar FUNCTION_INVOCATION_TIMEOUT
-export const maxDuration = 5 // 5 segundos
-
 export async function POST(request: Request) {
-  const uri = process.env.MONGO_URI || ""
-  let client: MongoClient | null = null
-
   try {
     // Obter dados do corpo da requisição
     const { name, email, password, role, formation, disciplines } = await request.json()
@@ -22,26 +16,9 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Nome, email, senha e função são obrigatórios" }, { status: 400 })
     }
 
-    // Verificar se a URI está configurada
-    if (!uri) {
-      console.error("URI do MongoDB não configurada")
-      return NextResponse.json({ message: "Erro de configuração do banco de dados" }, { status: 500 })
-    }
-
-    // Conectar ao MongoDB com opções para ignorar erros SSL
     try {
-      client = new MongoClient(uri, {
-        serverSelectionTimeoutMS: 3000, // Reduzir timeout para 3 segundos
-        connectTimeoutMS: 3000,
-        ssl: true,
-        tlsAllowInvalidCertificates: true, // Ignorar erros de certificado SSL
-        tlsAllowInvalidHostnames: true, // Ignorar erros de hostname SSL
-      })
-
-      await client.connect()
-
-      // Usar o banco de dados dynamicpro
-      const db = client.db("dynamicpro")
+      // Conectar ao MongoDB usando a configuração segura
+      const { db } = await connectToMongoDB()
       const usersCollection = db.collection("users")
 
       // Verificar se o email já está em uso
@@ -107,16 +84,9 @@ export async function POST(request: Request) {
       },
       { status: 500 },
     )
-  } finally {
-    if (client) {
-      try {
-        await client.close()
-      } catch (closeError) {
-        console.error("Erro ao fechar conexão MongoDB:", closeError)
-      }
-    }
   }
 }
+
 
 
 
