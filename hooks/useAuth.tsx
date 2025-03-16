@@ -50,7 +50,9 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     const checkAuth = async () => {
       try {
         const token = localStorage.getItem("token")
-        if (!token) {
+        const userRole = localStorage.getItem("userRole")
+
+        if (!token || !userRole) {
           setLoading(false)
           return
         }
@@ -59,6 +61,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         const response = await fetch("/api/auth/verify", {
           headers: {
             Authorization: `Bearer ${token}`,
+            "X-User-Role": userRole,
           },
         })
 
@@ -68,6 +71,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         } else {
           // Token inválido, remover do localStorage
           localStorage.removeItem("token")
+          localStorage.removeItem("userRole")
         }
       } catch (err) {
         console.error("Erro ao verificar autenticação:", err)
@@ -86,7 +90,8 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     setError(null)
 
     try {
-      const response = await fetch("/api/auth/login", {
+      // Usar o endpoint mock para login
+      const response = await fetch("/api/auth/login-mock", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
@@ -112,10 +117,16 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         return false
       }
 
-      // Guardar token
+      // Guardar token e função do usuário
       localStorage.setItem("token", data.token)
+      localStorage.setItem("userRole", role)
+
       setUser(data.user)
       setLoading(false)
+
+      // Redirecionar para o dashboard
+      router.push("/dashboard")
+
       return true
     } catch (err) {
       console.error("Erro ao fazer login:", err)
@@ -124,8 +135,6 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       return false
     }
   }
-
-  // No método register, adicionar tratamento para o modo fallback
 
   const register = async (userData: any, role: "student" | "teacher") => {
     if (!isClient) return false
@@ -136,21 +145,14 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     try {
       console.log("Enviando dados para registro:", { ...userData, role })
 
-      // Criar um controller para abortar a requisição após um timeout
-      const controller = new AbortController()
-      const timeoutId = setTimeout(() => controller.abort(), 15000) // 15 segundos de timeout
-
-      const response = await fetch("/api/auth/register", {
+      // Usar o endpoint mock para registro
+      const response = await fetch("/api/auth/registro-mock", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
         },
         body: JSON.stringify({ ...userData, role }),
-        signal: controller.signal,
       })
-
-      // Limpar o timeout
-      clearTimeout(timeoutId)
 
       // Verificar se a resposta é JSON válido
       const contentType = response.headers.get("content-type")
@@ -165,12 +167,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       const data = await response.json()
       console.log("Resposta do servidor:", data)
 
-      // Verificar se estamos usando o modo fallback
-      if (data.fallback || data.mock) {
-        console.warn("Usando modo fallback/mock para autenticação")
-      }
-
-      if (!response.ok && !data.fallback) {
+      if (!response.ok) {
         const errorMsg = data.message || "Erro ao registrar"
         console.error("Erro na resposta:", errorMsg, response.status)
         setError(errorMsg)
@@ -180,19 +177,18 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
       // Após registro bem-sucedido, fazer login automático
       localStorage.setItem("token", data.token)
+      localStorage.setItem("userRole", role)
+
       setUser(data.user)
       setLoading(false)
+
+      // Redirecionar para o dashboard
+      router.push("/dashboard")
+
       return true
     } catch (err) {
       console.error("Erro ao registrar:", err)
-
-      // Verificar se é um erro de timeout
-      if (err instanceof DOMException && err.name === "AbortError") {
-        setError("Tempo limite excedido. O servidor está demorando para responder. Tente novamente mais tarde.")
-      } else {
-        setError("Ocorreu um erro ao tentar registrar. Verifique sua conexão e tente novamente.")
-      }
-
+      setError("Ocorreu um erro ao tentar registrar. Verifique sua conexão e tente novamente.")
       setLoading(false)
       return false
     }
@@ -202,6 +198,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     if (!isClient) return
 
     localStorage.removeItem("token")
+    localStorage.removeItem("userRole")
     setUser(null)
     router.push("/")
   }
@@ -214,6 +211,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 export const useAuth = () => {
   return useContext(AuthContext)
 }
+
 
 
 
