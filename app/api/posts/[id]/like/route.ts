@@ -1,89 +1,42 @@
-import { NextResponse } from "next/server"
-import { headers } from "next/headers"
-import { verify } from "jsonwebtoken"
+import { type NextRequest, NextResponse } from "next/server"
+import { prisma } from "@/lib/prisma"
 
-// Referência ao armazenamento mock de posts
-import { mockPosts } from "@/app/api/posts/route"
-
-// Configuração para forçar modo dinâmico
-export const dynamic = "force-dynamic"
-
-// Função para verificar autenticação
-async function verificarAutenticacao() {
-  const headersList = headers()
-  const authorization = headersList.get("Authorization")
-
-  if (!authorization || !authorization.startsWith("Bearer ")) {
-    return { autenticado: false, usuario: null }
-  }
-
-  const token = authorization.split(" ")[1]
-
+export async function POST(request: NextRequest, { params }: { params: { id: string } }) {
   try {
-    // Verificar token
-    const decoded = verify(token, process.env.JWT_SECRET || "secret") as {
-      id: string
-      email: string
-      role: string
-    }
+    const postId = params.id
+    const userId = "user-test-id" // Replace with actual user ID retrieval
 
-    return {
-      autenticado: true,
-      usuario: {
-        id: decoded.id,
-        email: decoded.email,
-        role: decoded.role,
+    const existingLike = await prisma.like.findUnique({
+      where: {
+        postId_userId: {
+          postId: postId,
+          userId: userId,
+        },
       },
+    })
+
+    if (existingLike) {
+      await prisma.like.delete({
+        where: {
+          postId_userId: {
+            postId: postId,
+            userId: userId,
+          },
+        },
+      })
+      return NextResponse.json({ liked: false })
+    } else {
+      await prisma.like.create({
+        data: {
+          postId: postId,
+          userId: userId,
+        },
+      })
+      return NextResponse.json({ liked: true })
     }
   } catch (error) {
-    return { autenticado: false, usuario: null }
+    console.error("Error liking/unliking post:", error)
+    return NextResponse.json({ error: "Internal Server Error" }, { status: 500 })
   }
-}
-
-// POST - Curtir/descurtir um post
-export async function POST(request: Request, { params }: { params: { id: string } }) {
-  const { autenticado, usuario } = await verificarAutenticacao()
-
-  if (!autenticado) {
-    return NextResponse.json({ message: "Não autorizado" }, { status: 401 })
-  }
-
-  const postId = params.id
-
-  // Buscar post pelo ID
-  const postIndex = mockPosts.findIndex((p) => p.id === postId)
-
-  if (postIndex === -1) {
-    return NextResponse.json({ message: "Post não encontrado" }, { status: 404 })
-  }
-
-  // Verificar se o usuário já curtiu o post
-  const post = mockPosts[postIndex]
-  const likedBy = post.likedBy || []
-  const userIndex = likedBy.indexOf(usuario!.id)
-
-  // Se o usuário já curtiu, remover curtida
-  if (userIndex !== -1) {
-    likedBy.splice(userIndex, 1)
-    post.likes = Math.max(0, post.likes - 1)
-  }
-  // Caso contrário, adicionar curtida
-  else {
-    likedBy.push(usuario!.id)
-    post.likes = (post.likes || 0) + 1
-  }
-
-  // Atualizar post
-  mockPosts[postIndex] = {
-    ...post,
-    likedBy,
-  }
-
-  return NextResponse.json({
-    data: mockPosts[postIndex],
-    liked: userIndex === -1, // true se curtiu, false se descurtiu
-    message: userIndex === -1 ? "Post curtido com sucesso" : "Curtida removida com sucesso",
-    mock: true,
-  })
 }
 
