@@ -2,10 +2,20 @@
 
 import type { ReactNode } from "react"
 import Link from "next/link"
-import { LayoutDashboard, BookOpen, Users, Settings, LogOut } from "lucide-react"
+import { usePathname } from "next/navigation"
+import { LayoutDashboard, BookOpen, Users, Settings, LogOut, MessageSquare, User } from "lucide-react"
+import { useAuth } from "@/hooks/useAuth"
+import { cn } from "@/lib/utils"
 
 // Componente de layout para o dashboard
 export default function DashboardLayout({ children }: { children: ReactNode }) {
+  const { user, logout } = useAuth()
+  const pathname = usePathname()
+
+  const isActive = (path: string) => {
+    return pathname === path || pathname?.startsWith(`${path}/`)
+  }
+
   return (
     <div className="min-h-screen bg-gray-950 text-white flex">
       {/* Sidebar */}
@@ -24,7 +34,17 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             <li>
               <Link
                 href="/dashboard"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                  isActive("/dashboard") &&
+                    !isActive("/dashboard/feed") &&
+                    !isActive("/dashboard/cursos") &&
+                    !isActive("/dashboard/alunos") &&
+                    !isActive("/dashboard/configuracoes") &&
+                    !isActive("/dashboard/perfil")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                )}
               >
                 <LayoutDashboard size={20} />
                 <span>Dashboard</span>
@@ -32,26 +52,71 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
             </li>
             <li>
               <Link
+                href="/dashboard/feed"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                  isActive("/dashboard/feed")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                )}
+              >
+                <MessageSquare size={20} />
+                <span>Feed</span>
+              </Link>
+            </li>
+            <li>
+              <Link
                 href="/dashboard/cursos"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                  isActive("/dashboard/cursos")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                )}
               >
                 <BookOpen size={20} />
                 <span>Meus Cursos</span>
               </Link>
             </li>
+            {user?.role === "teacher" && (
+              <li>
+                <Link
+                  href="/dashboard/alunos"
+                  className={cn(
+                    "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                    isActive("/dashboard/alunos")
+                      ? "bg-gray-800 text-white"
+                      : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                  )}
+                >
+                  <Users size={20} />
+                  <span>Alunos</span>
+                </Link>
+              </li>
+            )}
             <li>
               <Link
-                href="/dashboard/alunos"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                href="/dashboard/perfil"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                  isActive("/dashboard/perfil")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                )}
               >
-                <Users size={20} />
-                <span>Alunos</span>
+                <User size={20} />
+                <span>Meu Perfil</span>
               </Link>
             </li>
             <li>
               <Link
                 href="/dashboard/configuracoes"
-                className="flex items-center space-x-3 px-3 py-2 rounded-md hover:bg-gray-800 transition-colors"
+                className={cn(
+                  "flex items-center space-x-3 px-3 py-2 rounded-md transition-colors",
+                  isActive("/dashboard/configuracoes")
+                    ? "bg-gray-800 text-white"
+                    : "text-gray-400 hover:bg-gray-800 hover:text-white",
+                )}
               >
                 <Settings size={20} />
                 <span>Configurações</span>
@@ -63,12 +128,7 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
         <div className="p-4 border-t border-gray-800">
           <button
             className="flex items-center space-x-3 px-3 py-2 w-full text-left rounded-md hover:bg-gray-800 transition-colors text-gray-400 hover:text-white"
-            onClick={() => {
-              if (typeof window !== "undefined") {
-                localStorage.removeItem("token")
-                window.location.href = "/"
-              }
-            }}
+            onClick={logout}
           >
             <LogOut size={20} />
             <span>Sair</span>
@@ -81,5 +141,6 @@ export default function DashboardLayout({ children }: { children: ReactNode }) {
     </div>
   )
 }
+
 
 
