@@ -4,7 +4,7 @@ import { verify } from "jsonwebtoken"
 import type { Post } from "@/types"
 
 // Armazenamento em memória para posts (apenas para desenvolvimento)
-const mockPosts: Post[] = [
+export const mockPosts: Post[] = [
   {
     id: "post_1",
     title: "Bem-vindo ao Dynamic Pro",
@@ -135,4 +135,5 @@ export async function POST(request: Request) {
     )
   }
 }
+
 

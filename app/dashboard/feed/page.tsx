@@ -5,15 +5,18 @@ import { useRouter } from "next/navigation"
 import { useAuth } from "@/hooks/useAuth"
 import { Button } from "@/components/ui/button"
 import { PostCard } from "@/components/post-card"
-import { Plus } from "lucide-react"
+import { Plus, Loader2 } from "lucide-react"
+import { useToast } from "@/hooks/use-toast"
 import type { Post } from "@/types"
 
 export default function FeedPage() {
   const { user, loading } = useAuth()
   const router = useRouter()
+  const { toast } = useToast()
   const [posts, setPosts] = useState<Post[]>([])
   const [loadingPosts, setLoadingPosts] = useState(true)
   const [error, setError] = useState<string | null>(null)
+  const [processingAction, setProcessingAction] = useState<string | null>(null)
 
   // Redirecionar se não estiver autenticado
   useEffect(() => {
@@ -28,6 +31,7 @@ export default function FeedPage() {
       if (!user) return
 
       try {
+        setLoadingPosts(true)
         const token = localStorage.getItem("token")
         const response = await fetch("/api/posts", {
           headers: {
@@ -55,8 +59,36 @@ export default function FeedPage() {
   }, [user])
 
   const handleLike = async (postId: string) => {
-    // Implementar lógica de curtir post
-    console.log("Curtir post:", postId)
+    if (!user || processingAction === postId) return
+
+    try {
+      setProcessingAction(postId)
+      const token = localStorage.getItem("token")
+      const response = await fetch(`/api/posts/${postId}/like`, {
+        method: "POST",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Falha ao curtir post")
+      }
+
+      const data = await response.json()
+
+      // Atualizar post na lista
+      setPosts((prev) => prev.map((post) => (post.id === postId ? data.data : post)))
+    } catch (err) {
+      console.error("Erro ao curtir post:", err)
+      toast({
+        title: "Erro",
+        description: "Não foi possível processar sua ação",
+        variant: "destructive",
+      })
+    } finally {
+      setProcessingAction(null)
+    }
   }
 
   const handleComment = (postId: string) => {
@@ -65,13 +97,44 @@ export default function FeedPage() {
   }
 
   const handleEdit = (post: Post) => {
-    // Implementar lógica de editar post
-    console.log("Editar post:", post)
+    router.push(`/dashboard/posts/edit/${post.id}`)
   }
 
   const handleDelete = async (postId: string) => {
-    // Implementar lógica de excluir post
-    console.log("Excluir post:", postId)
+    if (!user || processingAction === `delete_${postId}`) return
+
+    try {
+      setProcessingAction(`delete_${postId}`)
+      const token = localStorage.getItem("token")
+      const response = await fetch(`/api/posts/${postId}`, {
+        method: "DELETE",
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      })
+
+      if (!response.ok) {
+        throw new Error("Falha ao excluir post")
+      }
+
+      // Remover post da lista
+      setPosts((prev) => prev.filter((post) => post.id !== postId))
+
+      toast({
+        title: "Post excluído",
+        description: "O post foi excluído com sucesso",
+        variant: "success",
+      })
+    } catch (err) {
+      console.error("Erro ao excluir post:", err)
+      toast({
+        title: "Erro",
+        description: "Não foi possível excluir o post",
+        variant: "destructive",
+      })
+    } finally {
+      setProcessingAction(null)
+    }
   }
 
   if (loading || !user) {
@@ -99,11 +162,17 @@ export default function FeedPage() {
       </header>
 
       {loadingPosts ? (
-        <div className="flex justify-center py-8">
-          <div className="animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-primary"></div>
+        <div className="flex flex-col items-center justify-center py-12">
+          <Loader2 className="h-8 w-8 animate-spin text-primary mb-4" />
+          <p className="text-gray-400">Carregando posts...</p>
         </div>
       ) : error ? (
-        <div className="bg-red-900/20 border border-red-900 text-red-300 p-4 rounded-md">{error}</div>
+        <div className="bg-red-900/20 border border-red-900 text-red-300 p-4 rounded-md">
+          {error}
+          <Button variant="outline" size="sm" className="mt-2" onClick={() => window.location.reload()}>
+            Tentar novamente
+          </Button>
+        </div>
       ) : posts.length === 0 ? (
         <div className="bg-gray-900 border border-gray-800 rounded-md p-8 text-center">
           <h3 className="text-xl font-medium mb-2">Nenhum post encontrado</h3>
@@ -133,4 +202,5 @@ export default function FeedPage() {
     </div>
   )
 }
+
 
