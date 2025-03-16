@@ -14,11 +14,13 @@ export async function GET() {
     valid: false,
     format: "unknown",
     value: "not provided",
+    length: 0,
   }
 
   // Verificar se a URI do MongoDB está configurada corretamente
   if (uri) {
-    uriDetails.value = uri.substring(0, 10) + "..."
+    uriDetails.length = uri.length
+    uriDetails.value = uri.substring(0, 10) + "..." + uri.substring(uri.length - 5)
 
     if (uri.startsWith("mongodb://")) {
       uriDetails.valid = true
@@ -43,7 +45,29 @@ export async function GET() {
       const db = client.db("dynamicpro")
       await db.command({ ping: 1 })
 
+      // Verificar se a coleção users existe
+      const collections = await db.listCollections().toArray()
+      const hasUsersCollection = collections.some((col) => col.name === "users")
+
       mongoStatus = "connected"
+
+      return NextResponse.json({
+        status: "ok",
+        timestamp: new Date().toISOString(),
+        environment: process.env.NODE_ENV || "development",
+        mongodb: {
+          status: mongoStatus,
+          uri: uriDetails,
+          collections: collections.map((c) => c.name),
+          has_users_collection: hasUsersCollection,
+        },
+        jwt_secret: process.env.JWT_SECRET ? "configured" : "missing",
+        env_vars: {
+          NODE_ENV: process.env.NODE_ENV || "not set",
+          MONGO_URI: "configured with length " + uriDetails.length,
+          JWT_SECRET: process.env.JWT_SECRET ? "configured" : "missing",
+        },
+      })
     } catch (error) {
       console.error("Erro ao verificar conexão com MongoDB:", error)
       mongoStatus = "error"
@@ -61,16 +85,25 @@ export async function GET() {
     mongoStatus = "invalid_uri"
   }
 
-  return NextResponse.json({
-    status: mongoStatus === "connected" ? "ok" : "error",
-    timestamp: new Date().toISOString(),
-    environment: process.env.NODE_ENV || "development",
-    mongodb: {
-      status: mongoStatus,
-      uri: uriDetails,
-      error: errorDetails,
+  return NextResponse.json(
+    {
+      status: "error",
+      timestamp: new Date().toISOString(),
+      environment: process.env.NODE_ENV || "development",
+      mongodb: {
+        status: mongoStatus,
+        uri: uriDetails,
+        error: errorDetails,
+      },
+      jwt_secret: process.env.JWT_SECRET ? "configured" : "missing",
+      env_vars: {
+        NODE_ENV: process.env.NODE_ENV || "not set",
+        MONGO_URI: uri ? "configured with length " + uriDetails.length : "not set",
+        JWT_SECRET: process.env.JWT_SECRET ? "configured" : "missing",
+      },
     },
-    jwt_secret: process.env.JWT_SECRET ? "configured" : "missing",
-  })
+    { status: 500 },
+  )
 }
+
 
