@@ -6,6 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
+import { CommentsSection } from "@/components/comments-section"
 import type { Post } from "@/types"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -146,29 +147,10 @@ export function PostCard({ post, onLike, onComment, onEdit, onDelete }: PostCard
 
       {showComments && (
         <div className="px-6 py-3 border-t border-gray-800">
-          {/* Aqui virá o componente de comentários */}
-          <div className="space-y-4">
-            <div className="flex items-start space-x-3">
-              <Avatar className="h-8 w-8">
-                <AvatarImage src="/placeholder.svg?height=32&width=32" alt={user?.name} />
-                <AvatarFallback>{user?.name?.substring(0, 2).toUpperCase() || "UN"}</AvatarFallback>
-              </Avatar>
-              <div className="flex-1">
-                <textarea
-                  className="w-full p-2 bg-gray-800 border border-gray-700 rounded-md text-sm"
-                  placeholder="Escreva um comentário..."
-                  rows={2}
-                />
-                <Button size="sm" className="mt-2">
-                  Comentar
-                </Button>
-              </div>
-            </div>
-
-            <div className="text-center text-gray-500 text-sm py-2">Carregando comentários...</div>
-          </div>
+          <CommentsSection postId={post.id} />
         </div>
       )}
     </Card>
   )
 }
+
