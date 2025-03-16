@@ -125,4 +125,3 @@ export async function closeConnection() {
     cachedClient = null
   }
 }
-

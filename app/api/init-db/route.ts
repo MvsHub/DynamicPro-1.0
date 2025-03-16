@@ -10,11 +10,22 @@ export const maxDuration = 5 // 5 segundos
 
 export async function GET() {
   const startTime = Date.now()
-  let client = null
-
+  
   try {
     // Conectar ao MongoDB
-    client = await connectToMongoDB()
+    const { client, mock } = await connectToMongoDB()
+    
+    // Se estamos no modo mock, retornar uma resposta simulada
+    if (mock || !client) {
+      return NextResponse.json({
+        success: true,
+        message: "Banco de dados inicializado em modo mock",
+        time_ms: Date.now() - startTime,
+        mock: true,
+      })
+    }
+    
+    // Se temos um cliente real, usar para inicializar o banco de dados
     const db = client.db("dynamicpro")
 
     // Verificar se a coleção users existe
@@ -83,6 +94,5 @@ export async function GET() {
     )
   }
 }
-
 
 
