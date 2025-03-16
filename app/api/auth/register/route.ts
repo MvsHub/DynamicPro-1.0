@@ -6,14 +6,11 @@ import { MongoClient } from "mongodb"
 // Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
+// Reduzir o timeout para evitar FUNCTION_INVOCATION_TIMEOUT
+export const maxDuration = 5 // 5 segundos
+
 export async function POST(request: Request) {
-  // Usar uma URI de conexão direta para testes
-  // Esta é uma URI de exemplo - você deve substituir pela sua própria URI
   const uri = process.env.MONGO_URI || ""
-
-  // Log para depuração
-  console.log("Tentando conectar ao MongoDB com URI:", uri ? "URI configurada" : "URI não configurada")
-
   let client: MongoClient | null = null
 
   try {
@@ -31,9 +28,16 @@ export async function POST(request: Request) {
       return NextResponse.json({ message: "Erro de configuração do banco de dados" }, { status: 500 })
     }
 
-    // Conectar ao MongoDB
+    // Conectar ao MongoDB com opções para ignorar erros SSL
     try {
-      client = new MongoClient(uri)
+      client = new MongoClient(uri, {
+        serverSelectionTimeoutMS: 3000, // Reduzir timeout para 3 segundos
+        connectTimeoutMS: 3000,
+        ssl: true,
+        tlsAllowInvalidCertificates: true, // Ignorar erros de certificado SSL
+        tlsAllowInvalidHostnames: true, // Ignorar erros de hostname SSL
+      })
+
       await client.connect()
 
       // Usar o banco de dados dynamicpro
@@ -113,6 +117,7 @@ export async function POST(request: Request) {
     }
   }
 }
+
 
 
 

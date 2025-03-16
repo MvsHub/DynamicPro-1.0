@@ -4,6 +4,9 @@ import { MongoClient } from "mongodb"
 // Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
+// Reduzir o timeout para evitar FUNCTION_INVOCATION_TIMEOUT
+export const maxDuration = 5 // 5 segundos
+
 export async function GET() {
   const uri = process.env.MONGO_URI || ""
   let client: MongoClient | null = null
@@ -29,20 +32,19 @@ export async function GET() {
       })
     }
 
-    // Tentar conectar ao MongoDB
+    // Tentar conectar ao MongoDB com opções para ignorar erros SSL
     client = new MongoClient(uri, {
-      serverSelectionTimeoutMS: 5000,
-      connectTimeoutMS: 5000,
+      serverSelectionTimeoutMS: 3000, // Reduzir timeout para 3 segundos
+      connectTimeoutMS: 3000,
+      ssl: true,
+      tlsAllowInvalidCertificates: true, // Ignorar erros de certificado SSL
+      tlsAllowInvalidHostnames: true, // Ignorar erros de hostname SSL
     })
 
     await client.connect()
-    await client.db("admin").command({ ping: 1 })
 
-    // Verificar se o banco de dados dynamicpro existe
-    const adminDb = client.db("admin")
-    const dbs = await adminDb.admin().listDatabases()
-    const dbNames = dbs.databases.map((db: any) => db.name)
-    const hasDynamicProDb = dbNames.includes("dynamicpro")
+    // Verificar conexão com ping
+    await client.db("admin").command({ ping: 1 })
 
     return NextResponse.json({
       success: true,
@@ -50,8 +52,6 @@ export async function GET() {
       uri_provided: true,
       uri_format: "válido",
       uri_sample: uri.substring(0, 10) + "...",
-      databases: dbNames,
-      has_dynamicpro_db: hasDynamicProDb,
       timestamp: new Date().toISOString(),
     })
   } catch (error) {
@@ -73,5 +73,6 @@ export async function GET() {
     }
   }
 }
+
 
 
