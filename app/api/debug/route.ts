@@ -26,7 +26,13 @@ export async function GET() {
   }
 
   // Tentar conectar ao MongoDB
-  const dbInfo = {
+  const dbInfo: {
+    connection_attempted: boolean
+    connection_successful: boolean
+    error: string | null
+    databases: string[]
+    collections: string[]
+  } = {
     connection_attempted: false,
     connection_successful: false,
     error: null,
@@ -55,7 +61,7 @@ export async function GET() {
 
       // Listar bancos de dados
       const dbs = await client.db().admin().listDatabases()
-      dbInfo.databases = dbs.databases.map((db: any) => db.name)
+      dbInfo.databases = dbs.databases.map((db: any) => db.name) as string[]
 
       // Verificar se o banco de dados dynamicpro existe
       if (dbInfo.databases.includes("dynamicpro")) {
@@ -80,4 +86,5 @@ export async function GET() {
     database: dbInfo,
   })
 }
+
 
