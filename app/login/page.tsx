@@ -92,7 +92,7 @@ export default function LoginPage() {
                 </div>
 
                 {loginError && (
-                  <Alert variant="destructive">
+                  <Alert variant="destructive" className="bg-red-900/20 border-red-900 text-red-300">
                     <AlertDescription>{loginError}</AlertDescription>
                   </Alert>
                 )}

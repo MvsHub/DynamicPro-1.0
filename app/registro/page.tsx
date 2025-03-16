@@ -146,7 +146,7 @@ export default function RegistroPage() {
                 )}
 
                 {registrationError && (
-                  <Alert variant="destructive">
+                  <Alert variant="destructive" className="bg-red-900/20 border-red-900 text-red-300">
                     <AlertDescription>{registrationError}</AlertDescription>
                   </Alert>
                 )}
@@ -173,6 +173,7 @@ export default function RegistroPage() {
     </div>
   )
 }
+
 
 
 
