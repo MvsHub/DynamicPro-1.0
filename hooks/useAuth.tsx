@@ -2,22 +2,26 @@
 
 import { createContext, useContext, useState, useEffect, type ReactNode } from "react"
 import { useRouter } from "next/navigation"
+import type { UserRole } from "@/types"
 
-type User = {
+type AuthUser = {
   id: string
   name: string
   email: string
-  role: "student" | "teacher"
+  role: UserRole
   formation?: string
   disciplines?: string[]
+  bio?: string
+  profileImage?: string
 }
 
 type AuthContextType = {
-  user: User | null
+  user: AuthUser | null
   loading: boolean
-  login: (email: string, password: string, role: "student" | "teacher") => Promise<boolean>
-  register: (userData: any, role: "student" | "teacher") => Promise<boolean>
+  login: (email: string, password: string, role: UserRole) => Promise<boolean>
+  register: (userData: any, role: UserRole) => Promise<boolean>
   logout: () => void
+  updateProfile: (profileData: Partial<AuthUser>) => Promise<boolean>
   error: string | null
 }
 
@@ -28,11 +32,12 @@ const AuthContext = createContext<AuthContextType>({
   login: async () => false,
   register: async () => false,
   logout: () => {},
+  updateProfile: async () => false,
   error: null,
 })
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
-  const [user, setUser] = useState<User | null>(null)
+  const [user, setUser] = useState<AuthUser | null>(null)
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState<string | null>(null)
   const router = useRouter()
@@ -68,6 +73,28 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
         if (response.ok) {
           const data = await response.json()
           setUser(data.user)
+
+          // Buscar perfil do usuário
+          try {
+            const profileResponse = await fetch("/api/profile", {
+              headers: {
+                Authorization: `Bearer ${token}`,
+              },
+            })
+
+            if (profileResponse.ok) {
+              const profileData = await profileResponse.json()
+              if (profileData.data) {
+                // Atualizar usuário com dados do perfil
+                setUser((prev) => ({
+                  ...prev!,
+                  ...profileData.data,
+                }))
+              }
+            }
+          } catch (profileError) {
+            console.error("Erro ao buscar perfil:", profileError)
+          }
         } else {
           // Token inválido, remover do localStorage
           localStorage.removeItem("token")
@@ -83,7 +110,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     checkAuth()
   }, [isClient])
 
-  const login = async (email: string, password: string, role: "student" | "teacher") => {
+  const login = async (email: string, password: string, role: UserRole) => {
     if (!isClient) return false
 
     setLoading(true)
@@ -136,7 +163,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
-  const register = async (userData: any, role: "student" | "teacher") => {
+  const register = async (userData: any, role: UserRole) => {
     if (!isClient) return false
 
     setLoading(true)
@@ -194,6 +221,54 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     }
   }
 
+  const updateProfile = async (profileData: Partial<AuthUser>) => {
+    if (!isClient || !user) return false
+
+    setLoading(true)
+    setError(null)
+
+    try {
+      const token = localStorage.getItem("token")
+
+      if (!token) {
+        setError("Usuário não autenticado")
+        setLoading(false)
+        return false
+      }
+
+      const response = await fetch("/api/profile", {
+        method: "PUT",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+        body: JSON.stringify(profileData),
+      })
+
+      const data = await response.json()
+
+      if (!response.ok) {
+        setError(data.message || "Erro ao atualizar perfil")
+        setLoading(false)
+        return false
+      }
+
+      // Atualizar usuário com os novos dados
+      setUser((prev) => ({
+        ...prev!,
+        ...data.data,
+      }))
+
+      setLoading(false)
+      return true
+    } catch (err) {
+      console.error("Erro ao atualizar perfil:", err)
+      setError("Ocorreu um erro ao atualizar o perfil")
+      setLoading(false)
+      return false
+    }
+  }
+
   const logout = () => {
     if (!isClient) return
 
@@ -204,13 +279,17 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
   }
 
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout, error }}>{children}</AuthContext.Provider>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateProfile, error }}>
+      {children}
+    </AuthContext.Provider>
   )
 }
 
 export const useAuth = () => {
   return useContext(AuthContext)
 }
+
+
 
 
 
