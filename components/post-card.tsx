@@ -1,8 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { formatDistanceToNow } from "date-fns"
-import { ptBR } from "date-fns/locale"
 import { MessageSquare, Heart, Share2, MoreVertical } from "lucide-react"
 import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
@@ -26,10 +24,30 @@ export function PostCard({ post, onLike, onComment, onEdit, onDelete }: PostCard
   const isAuthor = user?.id === post.authorId
   const canEdit = isAuthor && user?.role === "teacher"
 
-  const timeAgo = formatDistanceToNow(new Date(post.createdAt), {
-    addSuffix: true,
-    locale: ptBR,
-  })
+  const formatTimeAgo = (dateString: string) => {
+    const date = new Date(dateString)
+    const now = new Date()
+    const diffInSeconds = Math.floor((now.getTime() - date.getTime()) / 1000)
+
+    if (diffInSeconds < 60) return `${diffInSeconds} segundos atrás`
+
+    const diffInMinutes = Math.floor(diffInSeconds / 60)
+    if (diffInMinutes < 60) return `${diffInMinutes} minutos atrás`
+
+    const diffInHours = Math.floor(diffInMinutes / 60)
+    if (diffInHours < 24) return `${diffInHours} horas atrás`
+
+    const diffInDays = Math.floor(diffInHours / 24)
+    if (diffInDays < 30) return `${diffInDays} dias atrás`
+
+    const diffInMonths = Math.floor(diffInDays / 30)
+    if (diffInMonths < 12) return `${diffInMonths} meses atrás`
+
+    const diffInYears = Math.floor(diffInMonths / 12)
+    return `${diffInYears} anos atrás`
+  }
+
+  const timeAgo = formatTimeAgo(post.createdAt)
 
   const handleLike = () => {
     if (onLike) onLike(post.id)
@@ -154,4 +172,3 @@ export function PostCard({ post, onLike, onComment, onEdit, onDelete }: PostCard
     </Card>
   )
 }
-
