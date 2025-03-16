@@ -5,14 +5,21 @@ import { connectToMongoDB, closeConnection } from "@/lib/mongodb-config"
 // Configuração para forçar modo dinâmico
 export const dynamic = "force-dynamic"
 
+// Interface para o objeto de coleção retornado pelo MongoDB
+interface MongoCollection {
+  name: string
+  type: string
+  options?: Record<string, any>
+}
+
 export async function GET() {
   try {
     // Conectar ao MongoDB
     const { db } = await connectToMongoDB()
 
     // Verificar se a coleção users já existe
-    const collections = await db.listCollections().toArray()
-    const collectionNames = collections.map((col) => col.name)
+    const collections = (await db.listCollections().toArray()) as MongoCollection[]
+    const collectionNames = collections.map((col: MongoCollection) => col.name)
 
     // Criar a coleção users se não existir
     if (!collectionNames.includes("users")) {
@@ -65,4 +72,5 @@ export async function GET() {
     await closeConnection()
   }
 }
+
 
