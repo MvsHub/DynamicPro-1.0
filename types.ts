@@ -23,14 +23,17 @@ export type Comment = {
   
   export type User = {
     id: string
-    name: string // Alterado de 'nome' para 'name'
+    name: string
     email: string
     role: "teacher" | "student" | "admin"
     avatar?: string
     bio?: string
-    formation?: string // Adicionado campo formation que parece estar sendo usado
+    formation?: string
+    disciplines?: string[] // Adicionado campo disciplines
+    profileImage?: string // Adicionado campo profileImage
     createdAt: string
   }
+  
   
   
   
