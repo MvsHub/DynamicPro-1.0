@@ -6,7 +6,7 @@ import { Card, CardContent, CardFooter, CardHeader } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from "@/components/ui/dropdown-menu"
-import {CommentsSection} from "@/components/comments-section"
+import CommentsSection from "@/components/comments-section" // Removidas as chaves para importar como default export
 import type { Post } from "@/types"
 import { useAuth } from "@/hooks/useAuth"
 
@@ -153,4 +153,5 @@ export function PostCard({ post, onLike, onComment, onEdit, onDelete }: PostCard
     </Card>
   )
 }
+
 
