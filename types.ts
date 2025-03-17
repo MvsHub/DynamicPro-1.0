@@ -21,18 +21,24 @@ export type Comment = {
     createdAt: string
   }
   
+  // Adicionar o tipo UserRole antes da definição do tipo User
+  
+  export type UserRole = "teacher" | "student" | "admin"
+  
   export type User = {
     id: string
     name: string
     email: string
-    role: "teacher" | "student" | "admin"
+    role: UserRole
     avatar?: string
     bio?: string
     formation?: string
-    disciplines?: string[] // Adicionado campo disciplines
-    profileImage?: string // Adicionado campo profileImage
+    disciplines?: string[]
+    profileImage?: string
     createdAt: string
   }
+  
+  
   
   
   
