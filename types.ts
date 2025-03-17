@@ -23,12 +23,14 @@ export type Comment = {
   
   export type User = {
     id: string
-    nome: string
+    name: string // Alterado de 'nome' para 'name'
     email: string
     role: "teacher" | "student" | "admin"
     avatar?: string
     bio?: string
+    formation?: string // Adicionado campo formation que parece estar sendo usado
     createdAt: string
   }
+  
   
   
