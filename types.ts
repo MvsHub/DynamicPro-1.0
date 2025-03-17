@@ -21,3 +21,14 @@ export type Comment = {
     createdAt: string
   }
   
+  export type User = {
+    id: string
+    nome: string
+    email: string
+    role: "teacher" | "student" | "admin"
+    avatar?: string
+    bio?: string
+    createdAt: string
+  }
+  
+  
