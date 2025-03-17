@@ -4,9 +4,9 @@ import type React from "react"
 import { useState, createContext, useContext } from "react"
 import { X } from "lucide-react"
 
-type ToastVariant = "default" | "destructive" | "success"
+export type ToastVariant = "default" | "destructive" | "success"
 
-interface Toast {
+export interface Toast {
   id: string
   title: string
   description?: string
