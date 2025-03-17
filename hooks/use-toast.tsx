@@ -1,7 +1,6 @@
 "use client"
 
 import type React from "react"
-
 import { useState, createContext, useContext } from "react"
 import { X } from "lucide-react"
 
@@ -75,4 +74,5 @@ export function ToastProvider({ children }: { children: React.ReactNode }) {
 }
 
 export const useToast = () => useContext(ToastContext)
+
 
