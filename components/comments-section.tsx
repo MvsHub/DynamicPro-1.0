@@ -6,7 +6,9 @@ import { useState, useEffect } from "react"
 interface Comment {
   id: string
   text: string
-  author: string
+  content?: string
+  author?: string
+  authorName?: string
   createdAt: string
 }
 
@@ -39,7 +41,7 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
     }
 
     fetchComments()
-  }, [postId])
+  }, id-param) // Corrigido: era "id-param" e agora é id-param
 
   const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
     setNewComment(e.target.value)
@@ -87,9 +89,10 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
         <ul>
           {comments.map((comment) => (
             <li key={comment.id}>
-              <p>{comment.text}</p>
+              <p>{comment.content || comment.text}</p>
               <p>
-                By {comment.author} on {new Date(comment.createdAt).toLocaleDateString()}
+                By {comment.authorName || comment.author || "Anonymous"} on{" "}
+                {new Date(comment.createdAt).toLocaleDateString()}
               </p>
             </li>
           ))}
@@ -106,5 +109,8 @@ const CommentsSection: React.FC<CommentsSectionProps> = ({ postId }) => {
 }
 
 export default CommentsSection
+
+
+
 
 
